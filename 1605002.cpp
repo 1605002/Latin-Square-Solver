@@ -1,12 +1,148 @@
 #include<bits/stdc++.h>
 using namespace std;
+#define M 105
+
+char input_file[] = "csp-task/data/d-10-01.txt.txt";
+
+int n;
+int grid[M][M];
+int row_cnt[M], row_ald[M][M];
+int col_cnt[M], col_ald[M][M];
+int dom_size[M][M];
+int tot;
+
+int nodes_visited, fails;
+
+void parse_input()
+{
+    string line;
+
+    getline(cin, line);
+    n = atoi(line.substr(2, line.size()-3).c_str());
+
+    getline(cin, line);
+    getline(cin, line);
+
+    for(int i = 1; i <= n; i++)
+    {
+        getline(cin, line);
+
+        vector<int> delimeters;
+        delimeters.push_back(-1);
+
+        for(int j = 0; j < line.size(); j++)
+        {
+            if(line[j] == ',' || line[j] == '|') delimeters.push_back(j);
+        }
+
+        for(int j = 0; j+1 < delimeters.size(); j++)
+        {
+            int st = delimeters[j], ed = delimeters[j+1];
+            grid[i][j+1] = atoi(line.substr(st+1, ed-st-1).c_str());
+        }
+    }
+}
+
+void print_board()
+{
+    printf("%d\n", n);
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++) printf("%d ", grid[i][j]);
+        printf("\n");
+    }
+}
+
+void place(int x, int y, int val)
+{
+    grid[x][y] = val;
+
+    row_cnt[x]++, row_ald[x][val]++;
+    col_cnt[y]++, col_ald[y][val]++;
+    tot++;
+}
+
+void unplace(int x, int y, int val)
+{
+    grid[x][y] = 0;
+    
+    row_cnt[x]--, row_ald[x][val]--;
+    col_cnt[y]--, col_ald[y][val]--;
+    tot--;
+}
+
+void sdf(int &x, int &y)
+{
+    int mn = n+1;
+
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++)
+        {
+            if(grid[i][j]) continue;
+
+            if(dom_size[i][j] < mn) mn = dom_size[i][j], x = i, y = j;
+        }
+    }
+}
+
+void init_basic()
+{
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++)
+        {
+            if(grid[i][j])
+            {
+                int val = grid[i][j];
+
+                dom_size[i][j] = n;
+                place(i, j, val);
+            }
+        }
+    }
+}
+
+void init_bt() {}
+
+bool propagate_bt(int x, int y)
+{
+    int val = grid[x][y];
+    return (row_ald[x][val] == 1 && col_ald[y][val] == 1);
+}
+
+bool solver_bt()
+{
+    assert(tot < n*n);
+
+    int x, y;
+    sdf(x, y);
+
+    for(int val = 1; val <= n; val++)
+    {
+        place(x, y, val);
+        nodes_visited++;
+        
+        if(propagate_bt(x, y))
+        {
+            if(tot == n*n) return true;
+            if(solver_bt()) return true;
+        }
+        else fails++;
+
+        unplace(x, y, val);
+    }
+
+    return false;
+}
 
 int main()
 {
-    printf("Starting AI offline 4...\n");
-    printf("Emni\n");
-    printf("Abaro emni\n");
-    printf("Abaro abaro emni\n");
+    freopen(input_file, "r", stdin);
+
+    parse_input();
+
+    print_board();
 
     return 0;
 }
