@@ -2,7 +2,7 @@
 using namespace std;
 #define M 105
 
-char input_file[] = "csp-task/data/d-10-01.txt.txt";
+char input_file[] = "csp-task/data/d-10-09.txt.txt";
 
 int n;
 int grid[M][M];
@@ -53,6 +53,33 @@ void print_board()
     }
 }
 
+int is_valid()
+{
+    bool shob = true;
+
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++)
+        {
+            if(grid[i][j] < 0 || grid[i][j] > n) return 0;
+            if(grid[i][j] == 0) shob = false;
+
+            for(int k = 1; k <= n; k++)
+            {
+                for(int l = 1; l <= n; l++)
+                {
+                    if(i == k && j == l) continue;
+                    if(i != k && j != l) continue;
+
+                    if(grid[i][j] && grid[i][j] == grid[k][l]) return 0;
+                }
+            }
+        }
+    }
+
+    return shob+1;
+}
+
 void place(int x, int y, int val)
 {
     grid[x][y] = val;
@@ -71,6 +98,22 @@ void unplace(int x, int y, int val)
     tot--;
 }
 
+void init_basic()
+{
+    nodes_visited++;
+
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++)
+        {
+            if(grid[i][j]) place(i, j, grid[i][j]);
+            else dom_size[i][j] = n;
+        }
+    }
+}
+
+void init_bt() {}
+
 void sdf(int &x, int &y)
 {
     int mn = n+1;
@@ -85,25 +128,6 @@ void sdf(int &x, int &y)
         }
     }
 }
-
-void init_basic()
-{
-    for(int i = 1; i <= n; i++)
-    {
-        for(int j = 1; j <= n; j++)
-        {
-            if(grid[i][j])
-            {
-                int val = grid[i][j];
-
-                dom_size[i][j] = n;
-                place(i, j, val);
-            }
-        }
-    }
-}
-
-void init_bt() {}
 
 bool propagate_bt(int x, int y)
 {
@@ -142,7 +166,32 @@ int main()
 
     parse_input();
 
-    print_board();
+    if(!is_valid())
+    {
+        printf("Invalid input\n");
+        return 0;
+    }
+
+    init_basic();
+    if(tot == n*n)
+    {
+        printf("Already completed\n");
+        return 0;
+    }
+
+    init_bt();
+
+    bool res = solver_bt();
+
+    if(res)
+    {
+        assert(is_valid() == 2);
+
+        print_board();
+        printf("Number of nodes visited = %d\n", nodes_visited);
+        printf("Number of fails = %d\n", fails);
+    }
+    else printf("Bhul\n");
 
     return 0;
 }
