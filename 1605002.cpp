@@ -4,8 +4,8 @@ using namespace std;
 #define INF 1000000000
 typedef long long ll;
 
-char input_file[] = "csp-task/data/d-10-09.txt.txt";
-//char input_file[] = "big.txt";
+//char input_file[] = "csp-task/data/d-10-09.txt.txt";
+char input_file[] = "input.txt";
 
 int n;
 int grid[M][M];
@@ -166,6 +166,63 @@ bool propagate_fc(int x, int y, bool invert = false)
     return true;
 }
 
+bool propagate_mac(int x, int y, stack<int>& st)
+{
+    int val = grid[x][y];
+    queue<int> qu;
+
+    for(int j = 1; j <= n; j++)
+    {
+        if(grid[x][j]) continue;
+        qu.push(x); qu.push(j); qu.push(val);
+    }
+    for(int i = 1; i <= n; i++)
+    {
+        if(grid[i][y]) continue;
+        qu.push(i); qu.push(y); qu.push(val);
+    }
+
+    while(qu.size())
+    {
+        int x1 = qu.front(); qu.pop();
+        int y1 = qu.front(); qu.pop();
+        int val1 = qu.front(); qu.pop();
+
+        st.push(dom_size[x1][y1]);
+        st.push(cant_place[x1][y1][val1]);
+        st.push(val1);
+        st.push(y1);
+        st.push(x1);
+
+        cant_place[x1][y1][val1]++;
+
+        if(cant_place[x1][y1][val1] == 1)
+        {
+            dom_size[x1][y1]--;
+
+            if(dom_size[x1][y1] == 0) return false;
+            if(dom_size[x1][y1] == 1)
+            {
+                int val2 = 0;
+                while(cant_place[x1][y1][++val2] != 0);
+
+                for(int j = 1; j <= n; j++)
+                {
+                    if(grid[x1][j] || j == y1) continue;
+                    qu.push(x1); qu.push(j); qu.push(val2);
+                }
+                for(int i = 1; i <= n; i++)
+                {
+                    if(grid[i][y1] || i == x1) continue;
+                    qu.push(i); qu.push(y1); qu.push(val2);
+                }    
+            }
+        }
+    }
+
+    return true;
+}
+
 void init_bt() {}
 
 void init_fc()
@@ -175,6 +232,18 @@ void init_fc()
         for(int j = 1; j <= n; j++)
         {
             if(grid[i][j]) propagate_fc(i, j);
+        }
+    }
+}
+
+void init_mac()
+{
+    stack<int> st;
+    for(int i = 1; i <= n; i++)
+    {
+        for(int j = 1; j <= n; j++)
+        {
+            if(grid[i][j]) propagate_mac(i, j, st);
         }
     }
 }
@@ -272,6 +341,43 @@ bool solver_fc()
     return false;
 }
 
+bool solver_mac()
+{
+    assert(tot < n*n);
+
+    int x, y;
+    brelaz(x, y);
+
+    for(int val = 1; val <= n; val++)
+    {
+        if(cant_place[x][y][val]) continue;
+
+        place(x, y, val);
+        nodes_visited++;
+        
+        stack<int> st;
+        if(propagate_mac(x, y, st))
+        {
+            if(tot == n*n) return true;
+            if(solver_mac()) return true;
+        }
+        else fails++;
+
+        while(st.size())
+        {
+            int a = st.top(); st.pop();
+            int b = st.top(); st.pop();
+            int c = st.top(); st.pop();
+
+            cant_place[a][b][c] = st.top(); st.pop();
+            dom_size[a][b] = st.top(); st.pop();
+        }
+        unplace(x, y, val);
+    }
+
+    return false;
+}
+
 int main()
 {
     freopen(input_file, "r", stdin);
@@ -291,9 +397,9 @@ int main()
         return 0;
     }
 
-    init_fc();
-
-    bool res = solver_fc();
+    init_mac();
+    
+    bool res = solver_mac();
 
     if(res)
     {
